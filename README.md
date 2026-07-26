@@ -32,15 +32,15 @@ Presented by **Team Cipher Syndicate** · **KSP Datathon 2026**
 
 <div align="center">
 
-<a href="docs/SAHASRA-demo.mp4">
+<a href="videos/sahasra-pitch/renders/final.mp4">
   <img src="docs/demo-poster.jpg" width="760" alt="Watch the SAHASRA demo" />
 </a>
 
-**▶ [Watch the full 2½-minute demo](docs/SAHASRA-demo.mp4)** &nbsp;·&nbsp; 1080p · real screenshots + real app footage
+**▶ [Watch the full 2½-minute demo](videos/sahasra-pitch/renders/final.mp4)** &nbsp;·&nbsp; 1080p · real screenshots + real app footage
 
 </div>
 
-> _Tip: click the poster to play/download `docs/SAHASRA-demo.mp4`. On GitHub, drag the file into a Release or an issue to get an inline player._
+> _Tip: click the poster to play/download `videos/sahasra-pitch/renders/final.mp4`. On GitHub, drag the file into a Release or an issue to get an inline player._
 
 ---
 
@@ -222,7 +222,7 @@ SAHASRA is grounded in **real Karnataka crime data** — a **201,733-record corp
 
 ## 🔑 Demo Access
 
-The **SAHASRA Ops** login (from the demo) — password for all demo officers: **`KSP#2026`**
+The **SAHASRA Ops** login — password for all demo officers: **`Ksp#2026`** (the web Login screen pre-fills it and has one-click role quick-fill)
 
 | Role | Badge / Service ID |
 |---|---|

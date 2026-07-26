@@ -32,7 +32,11 @@ export function addDiaryEntry(caseId: string, officerId: string, entry: string):
 export interface BeatCheckin {
   id: string; officerId: string; checkpoint: string; lat: number; lng: number; withinToleranceM: number; ok: boolean; timestamp: string;
 }
-const BEAT_CHECKINS: BeatCheckin[] = [];
+const BEAT_CHECKINS: BeatCheckin[] = [
+  { id: "beat-seed-1", officerId: "AKKA-55", checkpoint: "Peenya 4th Block Junction", lat: 13.031, lng: 77.530, withinToleranceM: 18, ok: true, timestamp: new Date(Date.now() - 5 * 3600e3).toISOString() },
+  { id: "beat-seed-2", officerId: "AKKA-55", checkpoint: "Koramangala 80ft Road", lat: 12.935, lng: 77.626, withinToleranceM: 41, ok: true, timestamp: new Date(Date.now() - 3 * 3600e3).toISOString() },
+  { id: "beat-seed-3", officerId: "AKKA-55", checkpoint: "Flyover Pillar #44 (Peenya)", lat: 13.028, lng: 77.521, withinToleranceM: 132, ok: false, timestamp: new Date(Date.now() - 1 * 3600e3).toISOString() },
+];
 export function addBeatCheckin(c: Omit<BeatCheckin, "id" | "timestamp">): BeatCheckin {
   const rec: BeatCheckin = { ...c, id: `beat-${Date.now()}`, timestamp: new Date().toISOString() };
   BEAT_CHECKINS.unshift(rec);
@@ -121,7 +125,10 @@ export function addCommendation(officerId: string, type: string, detail: string)
 }
 
 // ── Annotation & Hypothesis Notebook (analyst private notes, versioned) ───────
-const ANNOTATIONS: any[] = [];
+const ANNOTATIONS: any[] = [
+  { id: "note-seed-1", target: "case-001", text: "MO matches the 2025 Gokulam serial — same 00:00–04:00 window, copper-focused. Recommend linking to MYS/2026/FIR-112.", author: "ANALYST-104", version: 1, timestamp: new Date(Date.now() - 2 * 864e5).toISOString() },
+  { id: "note-seed-2", target: "case-001", text: "Update: ANPR KA-01-MJ-9922 places the same SUV near two of three scenes. Confidence raised to HIGH.", author: "ANALYST-104", version: 2, timestamp: new Date(Date.now() - 1 * 864e5).toISOString() },
+];
 export function getAnnotations(target: string) { return ANNOTATIONS.filter((a) => a.target === target).sort((a, b) => a.version - b.version); }
 export function addAnnotation(target: string, text: string, author: string) {
   const version = ANNOTATIONS.filter((a) => a.target === target).length + 1;
@@ -147,7 +154,10 @@ export function addBeatNote(jurisdiction: string, location: string, note: string
 }
 
 // ── Collaboration Requests (IO → IO cross-officer notification) ───────────────
-const COLLAB: any[] = [];
+const COLLAB: any[] = [
+  { id: "collab-seed-1", fromOfficer: "IO-402", toOfficer: "IO-311", caseRef: "KSP/2026/FIR-1042", reason: "Your Mysuru burglary suspect shares a phone IMEI with my Peenya accused — can we compare CDRs?", status: "OPEN", timestamp: new Date(Date.now() - 6 * 3600e3).toISOString() },
+  { id: "collab-seed-2", fromOfficer: "IO-311", toOfficer: "IO-402", caseRef: "MYS/2026/FIR-112", reason: "Sharing recovered weighbridge-slip photos — same scrap-dealer network as your case.", status: "ACKNOWLEDGED", timestamp: new Date(Date.now() - 2 * 3600e3).toISOString() },
+];
 export function getCollab() { return COLLAB; }
 export function addCollab(fromOfficer: string, toOfficer: string, caseRef: string, reason: string) {
   const c = { id: `collab-${Date.now()}`, fromOfficer, toOfficer, caseRef, reason, status: "OPEN", timestamp: new Date().toISOString() }; COLLAB.unshift(c); return c;
@@ -163,7 +173,10 @@ export function addFieldIntel(source: string, kind: string, text: string, locati
 }
 
 // ── Pre-Shift Equipment Checklist ────────────────────────────────────────────
-const EQUIPMENT: any[] = [];
+const EQUIPMENT: any[] = [
+  { id: "eq-seed-1", officerId: "AKKA-55", items: { "Body camera": true, "Radio / wireless set": true, "Vehicle fuel & tyres": true, "First-aid kit": true, "Torch & baton": false, "ID & duty roster": true }, timestamp: new Date(Date.now() - 8 * 3600e3).toISOString() },
+  { id: "eq-seed-2", officerId: "AKKA-55", items: { "Body camera": true, "Radio / wireless set": true, "Vehicle fuel & tyres": true, "First-aid kit": true, "Torch & baton": true, "ID & duty roster": true }, timestamp: new Date(Date.now() - 32 * 3600e3).toISOString() },
+];
 export function addEquipmentCheck(officerId: string, items: any) {
   const e = { id: `eq-${Date.now()}`, officerId, items, timestamp: new Date().toISOString() }; EQUIPMENT.unshift(e); return e;
 }

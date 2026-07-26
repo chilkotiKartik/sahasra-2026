@@ -6,10 +6,19 @@ interface AuthContextType {
   token: string | null;
   login: (badge: string, pass: string) => Promise<{ success: boolean; message?: string; role?: UserRole }>;
   applySession: (session: AuthSession) => UserRole | undefined;
+  switchRole: (role: UserRole) => UserRole;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
 }
+
+// Demo identities used by the in-portal Role Switcher (mirrors the KSP demo officers).
+export const DEMO_IDENTITIES: Record<UserRole, UserProfile> = {
+  district_sp: { id: "usr-8821", badgeNumber: "SP-8821", name: "Superintendent of Police", role: "district_sp", jurisdiction: "SP-HQ-01", district: "Bengaluru Urban" },
+  crime_analyst: { id: "usr-104", badgeNumber: "ANALYST-104", name: "Crime Analyst", role: "crime_analyst", jurisdiction: "State Crime Cell", district: "Bengaluru Urban" },
+  investigating_officer: { id: "usr-402", badgeNumber: "IO-402", name: "Investigating Officer", role: "investigating_officer", jurisdiction: "Peenya PS", district: "Bengaluru Urban" },
+  akka_pade_officer: { id: "usr-55", badgeNumber: "AKKA-55", name: "Akka Pade Officer", role: "akka_pade_officer", jurisdiction: "Koramangala PS", district: "Bengaluru Urban" },
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -17,21 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<AuthSession | null>(() => {
     const saved = localStorage.getItem('sahasra_auth_session');
     if (saved) {
-      try { return JSON.parse(saved); } catch {}
+      try {
+        const s = JSON.parse(saved);
+        // Restore only a still-valid session; otherwise fall through to login.
+        if (s?.token && (!s.expiresAt || s.expiresAt > Date.now())) return s;
+      } catch {}
     }
-    // Default Auto-Bypass Session (District SP Role)
-    return {
-      token: "demo-sp-token-8821",
-      user: {
-        id: "usr-8821",
-        badgeNumber: "SP-8821",
-        name: "Superintendent of Police",
-        role: "district_sp",
-        jurisdictionDistrict: "Bengaluru Urban",
-        stationId: "SP-HQ-01"
-      },
-      expiresAt: new Date(Date.now() + 86400000).toISOString()
-    };
+    // No auto-bypass — the officer must authenticate on the login screen.
+    return null;
   });
   const [loading, setLoading] = useState(false);
 
@@ -70,6 +72,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return s?.user?.role;
   };
 
+  // Demo Role Switcher — instantly assume any KSP role to showcase every dashboard.
+  const switchRole = (role: UserRole): UserRole => {
+    const user = DEMO_IDENTITIES[role];
+    const s: AuthSession = {
+      token: `demo-${role}-token`,
+      user,
+      expiresAt: Date.now() + 86400000,
+    };
+    setSession(s);
+    localStorage.setItem('sahasra_auth_session', JSON.stringify(s));
+    return role;
+  };
+
   const logout = async () => {
     if (session?.token) {
       try {
@@ -90,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token: session?.token || null,
         login,
         applySession,
+        switchRole,
         logout,
         isAuthenticated: !!session?.token,
         loading
