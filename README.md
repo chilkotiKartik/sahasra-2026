@@ -32,15 +32,15 @@ Presented by **Team Cipher Syndicate** · **KSP Datathon 2026**
 
 <div align="center">
 
-<a href="videos/sahasra-pitch/renders/final.mp4">
+<a href="https://drive.google.com/file/d/1EJMpkJoOaEpGDyEtIfV1Zx871UoJI8zo/view?usp=drivesdk">
   <img src="docs/demo-poster.jpg" width="760" alt="Watch the SAHASRA demo" />
 </a>
 
-**▶ [Watch the full 2½-minute demo](videos/sahasra-pitch/renders/final.mp4)** &nbsp;·&nbsp; 1080p · real screenshots + real app footage
+**▶ [Watch the full 2½-minute demo](https://drive.google.com/file/d/1EJMpkJoOaEpGDyEtIfV1Zx871UoJI8zo/view?usp=drivesdk)** &nbsp;·&nbsp; 1080p · real screenshots + real app footage
 
 </div>
 
-> _Tip: click the poster to play/download `videos/sahasra-pitch/renders/final.mp4`. On GitHub, drag the file into a Release or an issue to get an inline player._
+> _Tip: click the poster to play the demo on Google Drive._
 
 ---
 
