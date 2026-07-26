@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "version": ">= 18.3.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sahasra-api-50044345666.development.catalystappsail.in"
+      }
+    },
+    "apk": {
+      "android": { "buildType": "apk" },
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sahasra-api-50044345666.development.catalystappsail.in",
+        "EXPO_PUBLIC_SENTRY_DSN": ""
+      }
+    },
+    "preview": {
+      "android": { "buildType": "apk" },
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sahasra-api-50044345666.development.catalystappsail.in",
+        "EXPO_PUBLIC_SENTRY_DSN": ""
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sahasra-api-50044345666.development.catalystappsail.in",
+        "EXPO_PUBLIC_SENTRY_DSN": ""
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

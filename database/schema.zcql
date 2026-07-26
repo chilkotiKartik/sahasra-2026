@@ -1,0 +1,152 @@
+-- CATALYST DATA STORE SCHEMA (ZCQL)
+-- SAHASRA KSP Crime Intelligence Platform
+
+-- 1. Crime Incidents Table
+CREATE TABLE CrimeIncidents (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  firNumber VARCHAR(50) UNIQUE NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  subcategory VARCHAR(100),
+  description TEXT,
+  latitude DECIMAL(10,7) NOT NULL,
+  longitude DECIMAL(10,7) NOT NULL,
+  beat VARCHAR(100),
+  jurisdiction VARCHAR(100),
+  district VARCHAR(50) NOT NULL,
+  ward VARCHAR(100),
+  occurredAt DATETIME NOT NULL,
+  reportedAt DATETIME NOT NULL,
+  dayOfWeek INT,
+  timeSlot VARCHAR(30),
+  status VARCHAR(30) DEFAULT 'under_investigation',
+  severity VARCHAR(20),
+  modusOperandi TEXT,
+  propertyLost DECIMAL(15,2),
+  victimCount INT DEFAULT 0,
+  suspectCount INT DEFAULT 0,
+  arrestedCount INT DEFAULT 0,
+  investigatingOfficer VARCHAR(100),
+  ioiPhone VARCHAR(20),
+  evidenceCount INT DEFAULT 0,
+  cctvAvailable BOOLEAN DEFAULT FALSE,
+  forensicsRequired BOOLEAN DEFAULT FALSE,
+  isRepeatLocation BOOLEAN DEFAULT FALSE,
+  isRepeatOffender BOOLEAN DEFAULT FALSE,
+  responseTimeMinutes INT,
+  aiRiskScore DECIMAL(5,2) DEFAULT 0,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Suspects Table
+CREATE TABLE Suspects (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  aliases TEXT,
+  age INT,
+  gender VARCHAR(10),
+  identification VARCHAR(100),
+  address TEXT,
+  phone VARCHAR(20),
+  criminalHistory BOOLEAN DEFAULT FALSE,
+  priorArrests INT DEFAULT 0,
+  knownAssociates TEXT,
+  modusOperandi TEXT,
+  photoUrl VARCHAR(500),
+  riskLevel VARCHAR(20) DEFAULT 'low',
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Crime-Suspect Link Table (Many-to-Many)
+CREATE TABLE CrimeSuspectLinks (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  crimeId BIGINT NOT NULL,
+  suspectId BIGINT NOT NULL,
+  role VARCHAR(50),
+  FOREIGN KEY (crimeId) REFERENCES CrimeIncidents(ROWID),
+  FOREIGN KEY (suspectId) REFERENCES Suspects(ROWID)
+);
+
+-- 4. Police Stations Table
+CREATE TABLE PoliceStations (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  address TEXT,
+  phone VARCHAR(20),
+  latitude DECIMAL(10,7) NOT NULL,
+  longitude DECIMAL(10,7) NOT NULL,
+  district VARCHAR(50) NOT NULL,
+  jurisdiction VARCHAR(100),
+  officerCount INT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Patrol Vans Table
+CREATE TABLE PatrolVans (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  vanNumber VARCHAR(30) NOT NULL,
+  officerInCharge VARCHAR(100),
+  officerPhone VARCHAR(20),
+  district VARCHAR(50),
+  zone VARCHAR(100),
+  status VARCHAR(30) DEFAULT 'active_patrol',
+  latitude DECIMAL(10,7),
+  longitude DECIMAL(10,7),
+  shift VARCHAR(10),
+  isWomenSafetyUnit BOOLEAN DEFAULT FALSE,
+  crewCount INT DEFAULT 3,
+  lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. SOS Alerts Table
+CREATE TABLE SOSAlerts (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  category VARCHAR(50) NOT NULL,
+  description TEXT,
+  latitude DECIMAL(10,7) NOT NULL,
+  longitude DECIMAL(10,7) NOT NULL,
+  district VARCHAR(50),
+  status VARCHAR(20) DEFAULT 'active',
+  triggeredBy VARCHAR(100),
+  triggeredByPhone VARCHAR(20),
+  nearestPoliceStation VARCHAR(100),
+  policeDistance DECIMAL(10,2),
+  isWomenSafety BOOLEAN DEFAULT FALSE,
+  audioUrl VARCHAR(500),
+  resolvedAt DATETIME,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Risk Zones (Computed by DBSCAN)
+CREATE TABLE RiskZones (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  centerLat DECIMAL(10,7) NOT NULL,
+  centerLng DECIMAL(10,7) NOT NULL,
+  radius DECIMAL(10,2) NOT NULL,
+  crimeCount INT DEFAULT 0,
+  density DECIMAL(10,4),
+  category VARCHAR(50),
+  severity VARCHAR(20),
+  district VARCHAR(50),
+  isActive BOOLEAN DEFAULT TRUE,
+  lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Crime Trends (Time Series)
+CREATE TABLE CrimeTrends (
+  ROWID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  district VARCHAR(50) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  date DATE NOT NULL,
+  count INT DEFAULT 0,
+  avgResponseTime DECIMAL(10,2),
+  clearanceRate DECIMAL(5,2),
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for geospatial queries
+CREATE INDEX idx_crime_location ON CrimeIncidents(district, latitude, longitude);
+CREATE INDEX idx_crime_time ON CrimeIncidents(occurredAt);
+CREATE INDEX idx_crime_category ON CrimeIncidents(category);
+CREATE INDEX idx_sos_status ON SOSAlerts(status);
+CREATE INDEX idx_patrol_district ON PatrolVans(district, status);

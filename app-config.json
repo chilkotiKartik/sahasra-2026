@@ -1,0 +1,11 @@
+{
+	"command": "npm run catalyst:start",
+	"build_command": "npm install --omit=dev && npm run catalyst:build",
+	"build_path": "./",
+	"stack": "node20",
+	"env_variables": {
+		"NODE_ENV": "production"
+	},
+	"memory": 512,
+	"scripts": {}
+}

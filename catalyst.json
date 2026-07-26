@@ -1,0 +1,11 @@
+{
+  "_comment": "Catalyst project descriptor. Deploying exclusively via AppSail ensures Express hosts both the frontend and WebSocket alert bus.",
+  "project_name": "sahasra",
+  "project_id": "sahasra-ai",
+  "appsail": [
+    {
+      "source": "deploy",
+      "name": "Sahasra-api"
+    }
+  ]
+}

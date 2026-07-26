@@ -1,0 +1,36 @@
+# Exclude Node dependencies (Catalyst will install these via build_command)
+node_modules/
+web/node_modules/
+
+# Exclude Git & IDE directories
+.git/
+.claude/
+.idea/
+.vscode/
+
+# Exclude Expo / mobile app source folders (only backend & web frontend are needed)
+.expo/
+app/
+_legacy_screens/
+components/
+constants/
+context/
+database/
+dataset/
+functions/
+lib/
+public/
+scripts/
+shared/
+android/
+ios/
+.gradle/
+
+# Exclude web source code (we only need web/dist to serve the portal)
+web/src/
+web/public/
+web/dist/client-package.json
+
+# Exclude logs
+*.log
+catalyst-debug.log

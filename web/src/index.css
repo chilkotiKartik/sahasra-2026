@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
+    /* Kill horizontal rubber-banding on mobile; vertical scroll happens inside <main>. */
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+
+  /* Give tappable controls a comfortable hit target on touch devices. */
+  @media (pointer: coarse) {
+    button, a, select, [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+}
+
+/* Custom Operations Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B132B;
+}
+::-webkit-scrollbar-thumb {
+  background: #1F3864;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B7791F;
+}
+
+/* Panel Glass Border */
+.ops-card {
+  background: linear-gradient(180deg, rgba(17, 28, 56, 0.95) 0%, rgba(15, 26, 56, 0.85) 100%);
+  border: 1px solid rgba(31, 56, 100, 0.6);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 20px -2px rgba(7, 12, 24, 0.6);
+}
+
+.ops-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+.ops-card-hover:hover {
+  border-color: rgba(183, 121, 31, 0.5);
+  box-shadow: 0 4px 25px -2px rgba(183, 121, 31, 0.15);
+}
+
+/* Leaflet Dark Map Tile Override */
+.leaflet-container {
+  background: #070C18 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3);
+}
+
+@keyframes forensic-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(600px);
+    opacity: 0;
+  }
+}
+
+.animate-forensic-scan {
+  animation: forensic-scan 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

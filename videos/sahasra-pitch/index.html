@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/vendor/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1920px; height: 1080px; overflow: hidden;
+        background: #05070f;
+      }
+      body { font-family: "Inter", system-ui, sans-serif; color: #e9edf5; }
+      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+      /* ---- design tokens ---- */
+      :root {
+        --bg: #05070f;
+        --bg2: #0a0e1c;
+        --panel: #0d1426;
+        --amber: #f0a63c;
+        --amber-soft: #e8a33d;
+        --teal: #2dd4a0;
+        --red: #e5484d;
+        --blue: #4f7cf6;
+        --ink: #e9edf5;
+        --muted: #8a94ad;
+      }
+
+      #root { position: relative; width: 1920px; height: 1080px; background: var(--bg); overflow: hidden; }
+
+      /* full-frame scene shell */
+      .scene {
+        position: absolute; inset: 0; width: 1920px; height: 1080px;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; background: var(--bg);
+      }
+      .scene.dark { background: radial-gradient(120% 120% at 50% 40%, #0a1024 0%, #05070f 70%); }
+
+      /* Ken Burns image layer */
+      .kb-wrap { position: absolute; inset: 0; overflow: hidden; }
+      .kb { position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover; will-change: transform; }
+      .scrim { position: absolute; inset: 0; background:
+        linear-gradient(180deg, rgba(5,7,15,.55) 0%, rgba(5,7,15,0) 22%, rgba(5,7,15,0) 55%, rgba(5,7,15,.82) 100%); }
+      .scrim-l { position: absolute; inset: 0; background:
+        linear-gradient(90deg, rgba(5,7,15,.9) 0%, rgba(5,7,15,.35) 40%, rgba(5,7,15,0) 70%); }
+
+      /* text blocks */
+      .caption { position: absolute; left: 120px; bottom: 120px; right: 120px; z-index: 5; }
+      .kicker { font-family: "JetBrains Mono", monospace; font-size: 22px; letter-spacing: .32em;
+        text-transform: uppercase; color: var(--amber); margin-bottom: 18px; }
+      .headline { font-size: 62px; font-weight: 800; line-height: 1.08; letter-spacing: -.01em; max-width: 1200px;
+        text-shadow: 0 4px 40px rgba(0,0,0,.6); }
+      .headline .em { color: var(--amber); }
+      .headline .tl { color: var(--teal); }
+      .sub { font-size: 30px; color: var(--muted); margin-top: 18px; font-weight: 500; max-width: 1100px; }
+
+      /* centered text card */
+      .card { position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center; padding: 0 220px; z-index: 6; }
+      .card .big { font-size: 76px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; }
+      .card .big .em { color: var(--amber); }
+      .card .big .tl { color: var(--teal); }
+      .card .small { font-size: 30px; color: var(--muted); margin-top: 26px; font-weight: 500; }
+
+      /* chapter marker */
+      .chapmark { font-family: "JetBrains Mono", monospace; font-size: 20px; letter-spacing: .3em;
+        color: var(--muted); text-transform: uppercase; }
+
+      /* scene-name label (montage) */
+      .screenlabel { position: absolute; left: 90px; top: 84px; z-index: 7;
+        font-family: "JetBrains Mono", monospace; font-size: 26px; letter-spacing: .12em;
+        color: var(--ink); background: rgba(8,12,24,.72); border: 1px solid rgba(240,166,60,.35);
+        padding: 12px 22px; border-radius: 10px; }
+      .screenlabel .dot { color: var(--amber); }
+
+      /* device / phone frame */
+      .phone { position: absolute; top: 70px; left: 300px; width: 452px; height: 940px;
+        border-radius: 46px; z-index: 3;
+        border: 6px solid #1b2540; background: #05070f;
+        box-shadow: 0 40px 120px rgba(0,0,0,.65), 0 0 0 2px rgba(240,166,60,.14),
+          0 0 80px rgba(240,166,60,.10); }
+      .phone::after { content:""; position:absolute; top:16px; left:50%; transform:translateX(-50%);
+        width:120px; height:26px; border-radius:16px; background:#0b1122; }
+      video.app { position: absolute; top: 84px; left: 314px; width: 424px; height: 912px;
+        border-radius: 34px; object-fit: cover; background:#05070f; z-index: 3; }
+      .phone-side { position: absolute; left: 860px; top: 0; bottom: 0; width: 900px;
+        display: flex; flex-direction: column; justify-content: center; z-index: 5; padding-right: 90px; }
+      .phone-side .kicker { margin-bottom: 22px; }
+      .phone-side .headline { font-size: 60px; }
+      .phone-side .sub { margin-top: 22px; }
+
+      /* map */
+      .mapwrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+      .mapsvg { width: 760px; height: 900px; overflow: visible; }
+      .kmap-fill { fill: #0e1730; stroke: #24365f; stroke-width: 2.5; }
+      .pin { fill: var(--red); }
+      .pin.warm { fill: var(--teal); }
+      .pinglow { fill: var(--red); opacity: .0; }
+      .link { stroke: var(--amber); stroke-width: 3.5; fill: none; filter: drop-shadow(0 0 8px rgba(240,166,60,.7)); }
+      .pinlabel { font-family: "JetBrains Mono", monospace; font-size: 22px; fill: #b9c2d8; }
+
+      /* montage tile */
+      .mtile { position: absolute; inset: 0; }
+      .mtile img { width: 100%; height: 100%; object-fit: cover; }
+
+      /* relay row */
+      .relay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0; z-index: 4; }
+      .relay .col { width: 380px; height: 640px; margin: 0 18px; border-radius: 18px; overflow: hidden;
+        border: 1px solid rgba(255,255,255,.08); box-shadow: 0 24px 70px rgba(0,0,0,.5); position: relative; }
+      .relay .col img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+      .relay .rolelab { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px;
+        font-family: "JetBrains Mono", monospace; font-size: 20px; letter-spacing: .08em; color: var(--ink);
+        background: linear-gradient(180deg, rgba(5,7,15,0), rgba(5,7,15,.92)); }
+      .arrow { width: 60px; height: 4px; background: var(--amber); position: relative; border-radius: 2px;
+        box-shadow: 0 0 14px rgba(240,166,60,.8); }
+      .arrow::after { content:""; position:absolute; right:-2px; top:-7px; border-left:16px solid var(--amber);
+        border-top:9px solid transparent; border-bottom:9px solid transparent; }
+
+      /* explainability drawer accent (S10) */
+      .drawer { position: absolute; right: 0; top: 0; bottom: 0; width: 10px; background:
+        linear-gradient(180deg, transparent, var(--amber), transparent); box-shadow: 0 0 40px rgba(240,166,60,.6); z-index: 7; }
+
+      /* verified badge highlight ring (S11) */
+      .vring { position: absolute; z-index: 6; border: 3px solid var(--teal); border-radius: 14px;
+        box-shadow: 0 0 30px rgba(45,212,160,.6); }
+
+      /* logo / close */
+      .logo { display: flex; flex-direction: column; align-items: center; }
+      .logo .shield { width: 128px; height: 128px; border-radius: 30px;
+        background: linear-gradient(145deg, var(--amber), #b9781f); display:flex; align-items:center; justify-content:center;
+        box-shadow: 0 0 60px rgba(240,166,60,.45); margin-bottom: 34px; }
+      .logo .shield svg { width: 72px; height: 72px; }
+      .logo .word { font-size: 96px; font-weight: 900; letter-spacing: .06em; }
+      .logo .tag { font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .28em;
+        color: var(--muted); margin-top: 20px; text-transform: uppercase; }
+
+      /* amber scan-line transition */
+      .trans { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+      .trans .flash { position: absolute; inset: 0; background: rgba(240,166,60,.0); }
+      .trans .bar { position: absolute; left: 0; width: 1920px; height: 6px; top: 0;
+        background: linear-gradient(90deg, transparent, var(--amber) 20%, #fff 50%, var(--amber) 80%, transparent);
+        box-shadow: 0 0 40px 8px rgba(240,166,60,.85); }
+      .trans .wipe { position: absolute; left: 0; top: 0; width: 1920px; height: 1088px;
+        transform: scaleY(0); transform-origin: top center;
+        background: linear-gradient(180deg, rgba(240,166,60,.16), rgba(5,7,15,.0)); }
+
+      /* generic hidden-initial helper handled via GSAP */
+      .fade { will-change: transform, opacity; }
+      .vig { position:absolute; inset:0; box-shadow: inset 0 0 260px rgba(0,0,0,.7); pointer-events:none; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="285"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- ============================================================
+           CHAPTER 1 — THE PROBLEM (0:00–0:35)
+      ============================================================ -->
+
+      <!-- S1 [FAST] 0–8 : cold open, two text lines -->
+      <div id="s1" class="clip scene dark" data-start="0" data-duration="8" data-track-index="1">
+        <div class="card">
+          <div id="s1grp">
+            <div class="big fade" id="s1a" style="font-size:82px;">1,100+ police stations.</div>
+            <div class="big fade" id="s1b" style="font-size:82px; margin-top:26px;">
+              <span class="em">Zero</span> way to see if they're connected.
+            </div>
+          </div>
+        </div>
+        <div class="vig"></div>
+      </div>
+
+      <!-- S2 [MEDIUM] 8–20 : Karnataka map, 3 unconnected pulsing red pins -->
+      <div id="s2" class="clip scene dark" data-start="8" data-duration="12" data-track-index="2">
+        <div class="mapwrap">
+          <svg class="mapsvg" id="s2map" viewBox="0 0 400 500">
+            <path class="kmap-fill" d="M150 20 L210 34 L246 74 L238 120 L272 150 L300 210 L288 262
+              L316 300 L300 350 L250 372 L236 430 L196 470 L150 452 L128 400 L92 372 L104 320
+              L74 288 L96 236 L70 196 L92 150 L82 104 L120 70 Z"/>
+            <!-- Hubballi (NW) -->
+            <circle class="pinglow" id="s2g1" cx="112" cy="150" r="34"/>
+            <circle class="pin" id="s2p1" cx="112" cy="150" r="11"/>
+            <text class="pinlabel" x="130" y="146">HUBBALLI</text>
+            <!-- Mysuru (S) -->
+            <circle class="pinglow" id="s2g2" cx="176" cy="392" r="34"/>
+            <circle class="pin" id="s2p2" cx="176" cy="392" r="11"/>
+            <text class="pinlabel" x="192" y="398">MYSURU</text>
+            <!-- Bengaluru (SE) -->
+            <circle class="pinglow" id="s2g3" cx="266" cy="330" r="34"/>
+            <circle class="pin" id="s2p3" cx="266" cy="330" r="11"/>
+            <text class="pinlabel" x="284" y="330">BENGALURU</text>
+          </svg>
+        </div>
+        <div class="caption">
+          <div class="kicker fade" id="s2k">Karnataka State Police</div>
+          <div class="headline fade" id="s2h">Districts working blind to <span class="em">each other.</span></div>
+        </div>
+      </div>
+
+      <!-- S3 [SLOW] 20–35 : pins connect, "We built the connection." -->
+      <div id="s3" class="clip scene dark" data-start="20" data-duration="15" data-track-index="1">
+        <div class="mapwrap">
+          <svg class="mapsvg" id="s3map" viewBox="0 0 400 500">
+            <path class="kmap-fill" d="M150 20 L210 34 L246 74 L238 120 L272 150 L300 210 L288 262
+              L316 300 L300 350 L250 372 L236 430 L196 470 L150 452 L128 400 L92 372 L104 320
+              L74 288 L96 236 L70 196 L92 150 L82 104 L120 70 Z"/>
+            <path class="link" id="s3l1" d="M112 150 L176 392"/>
+            <path class="link" id="s3l2" d="M176 392 L266 330"/>
+            <path class="link" id="s3l3" d="M266 330 L112 150"/>
+            <circle class="pin warm" cx="112" cy="150" r="11"/>
+            <circle class="pin warm" cx="176" cy="392" r="11"/>
+            <circle class="pin warm" cx="266" cy="330" r="11"/>
+          </svg>
+        </div>
+        <div class="card">
+          <div class="big fade" id="s3h" style="font-size:84px;">We built the <span class="tl">connection.</span></div>
+        </div>
+      </div>
+
+      <!-- T1 amber scan-line -->
+      <div id="t1" class="clip trans" data-start="34.4" data-duration="0.9" data-track-index="8">
+        <div class="flash" id="t1flash"></div>
+        <div class="wipe" id="t1wipe"></div>
+        <div class="bar" id="t1bar"></div>
+      </div>
+
+      <!-- ============================================================
+           CHAPTER 2 — WHY THIS APPROACH (0:35–1:05)
+      ============================================================ -->
+
+      <!-- S4 [MEDIUM] 35–50 : "not another chatbot" + brief Case Explorer glimpse -->
+      <div id="s4" class="clip scene dark" data-start="35" data-duration="15" data-track-index="2">
+        <div class="card" id="s4card">
+          <div class="big fade" id="s4a">KSP already has a chatbot.</div>
+          <div class="big fade" id="s4b" style="margin-top:20px;">We didn't build <span class="em">another one.</span></div>
+        </div>
+        <div class="kb-wrap fade" id="s4img" style="opacity:0;">
+          <img class="kb" id="s4kb" src="assets/img/case-explorer.png" />
+          <div class="scrim"></div>
+        </div>
+        <div class="caption fade" id="s4lab" style="opacity:0;">
+          <div class="kicker">Case Explorer · QuickML search</div>
+        </div>
+      </div>
+
+      <!-- S5 [BREATHER] 50–65 : hold on hotspot/fleet map -->
+      <div id="s5" class="clip scene" data-start="50" data-duration="15" data-track-index="1">
+        <div class="kb-wrap"><img class="kb" id="s5kb" src="assets/img/akka-fleet.png" /><div class="scrim"></div></div>
+        <div class="caption">
+          <div class="headline fade" id="s5h">Something a jury understands in <span class="em">3 seconds.</span></div>
+        </div>
+      </div>
+
+      <!-- T2 amber scan-line -->
+      <div id="t2" class="clip trans" data-start="64.4" data-duration="0.9" data-track-index="8">
+        <div class="flash" id="t2flash"></div><div class="wipe" id="t2wipe"></div><div class="bar" id="t2bar"></div>
+      </div>
+
+      <!-- ============================================================
+           CHAPTER 3 — THE PLATFORM (1:05–3:05)
+      ============================================================ -->
+
+      <!-- S6 [FAST MONTAGE] 65–80 : 6 rapid screenshot cuts -->
+      <div id="s6" class="clip scene" data-start="65" data-duration="15" data-track-index="2">
+        <div class="mtile" id="m1"><img src="assets/img/command-center.png" /></div>
+        <div class="mtile" id="m2"><img src="assets/img/case-explorer.png" /></div>
+        <div class="mtile" id="m3"><img src="assets/img/crime-trends.png" /></div>
+        <div class="mtile" id="m4"><img src="assets/img/patrol-planner.png" /></div>
+        <div class="mtile" id="m5"><img src="assets/img/behavioral-profiler.png" /></div>
+        <div class="mtile" id="m6"><img src="assets/img/governance-audit.png" /></div>
+        <div class="scrim"></div>
+        <div class="screenlabel"><span class="dot">▸ </span><span id="m-label">COMMAND CENTER</span></div>
+      </div>
+
+      <!-- S7 [HERO] 80–95 : Network Graph, two states -->
+      <div id="s7" class="clip scene" data-start="80" data-duration="15" data-track-index="1">
+        <div class="kb-wrap"><img class="kb" id="s7a" src="assets/img/network-graph-force.png" /></div>
+        <div class="kb-wrap" id="s7bwrap" style="opacity:0;"><img class="kb" id="s7b" src="assets/img/network-graph-starburst.png" /></div>
+        <div class="scrim"></div>
+        <div class="caption">
+          <div class="kicker fade" id="s7k">The Network Graph</div>
+          <div class="headline fade" id="s7h1">Every connection is <span class="tl">real.</span></div>
+          <div class="sub fade" id="s7h2">Confirmed links solid · AI-suggested links dashed.</div>
+        </div>
+      </div>
+
+      <!-- S8 [MEDIUM] 95–110 : forecast slider (Crime Trends) -->
+      <div id="s8" class="clip scene" data-start="95" data-duration="15" data-track-index="2">
+        <div class="kb-wrap"><img class="kb" id="s8kb" src="assets/img/crime-trends.png" /><div class="scrim"></div></div>
+        <div class="caption">
+          <div class="kicker fade" id="s8k">Forecast engine</div>
+          <div class="headline fade" id="s8h">Drag forward. Watch <span class="em">tomorrow's risk</span> before it happens.</div>
+        </div>
+      </div>
+
+      <!-- S9 [FAST] 110–120 : Camera Intelligence (ANPR match in anomaly stream) -->
+      <div id="s9" class="clip scene" data-start="110" data-duration="10" data-track-index="1">
+        <div class="kb-wrap"><img class="kb" id="s9kb" src="assets/img/command-center.png"
+          style="object-position: 8% 62%;" /><div class="scrim"></div></div>
+        <div class="caption">
+          <div class="kicker fade" id="s9k">Camera Intelligence · ANPR</div>
+          <div class="headline fade" id="s9h">A match here reaches a supervisor in <span class="em">seconds.</span></div>
+        </div>
+      </div>
+
+      <!-- S10 [BREATHER] 120–132 : explainability text card -->
+      <div id="s10" class="clip scene dark" data-start="120" data-duration="12" data-track-index="2">
+        <div class="card">
+          <div class="big fade" id="s10a" style="font-size:70px;">Every score. Every flag.</div>
+          <div class="big fade" id="s10b" style="font-size:70px; margin-top:18px;">
+            Explained in <span class="em">plain language</span> — never a black box.</div>
+        </div>
+        <div class="drawer fade" id="s10d" style="opacity:0;"></div>
+      </div>
+
+      <!-- S11 [MEDIUM] 132–150 : Governance / SHA-256 verified -->
+      <div id="s11" class="clip scene" data-start="132" data-duration="18" data-track-index="1">
+        <div class="kb-wrap"><img class="kb" id="s11kb" src="assets/img/governance-audit.png"
+          style="object-position: 50% 100%;" /><div class="scrim"></div></div>
+        <div class="vring fade" id="s11ring" style="left:520px; bottom:96px; width:900px; height:70px; opacity:0;"></div>
+        <div class="caption">
+          <div class="kicker fade" id="s11k">Governance · tamper-evident audit</div>
+          <div class="headline fade" id="s11h">The accountability layer most teams <span class="em">skip.</span></div>
+        </div>
+      </div>
+
+      <!-- S12 [FAST 4-beat] 150–165 : cross-role relay -->
+      <div id="s12" class="clip scene dark" data-start="150" data-duration="15" data-track-index="2">
+        <div class="relay">
+          <div class="col fade" id="r1"><img src="assets/img/command-center.png" /><div class="rolelab">1 · DISTRICT SP</div></div>
+          <div class="arrow fade" id="ar1" style="opacity:0;"></div>
+          <div class="col fade" id="r2"><img src="assets/img/patrol-planner.png" /><div class="rolelab">2 · PATROL PLANNER</div></div>
+          <div class="arrow fade" id="ar2" style="opacity:0;"></div>
+          <div class="col fade" id="r3"><img src="assets/img/akka-fleet.png" /><div class="rolelab">3 · DISPATCH</div></div>
+          <div class="arrow fade" id="ar3" style="opacity:0;"></div>
+          <div class="col fade" id="r4"><img src="assets/img/nearby-units.png" /><div class="rolelab">4 · FIELD OFFICER</div></div>
+        </div>
+        <div class="caption" style="bottom:70px;">
+          <div class="headline fade" id="s12h" style="font-size:56px;">One flagged case. Four roles. <span class="em">One connected chain.</span></div>
+        </div>
+      </div>
+
+      <!-- S13 [MEDIUM] 165–185 : into mobile app (login) -->
+      <div id="s13" class="clip scene dark" data-start="165" data-duration="20" data-track-index="1">
+        <div class="phone fade" id="s13phone"></div>
+        <div class="phone-side">
+          <div class="kicker fade" id="s13k">SAHASRA · field officer app</div>
+          <div class="headline fade" id="s13h">The same intelligence — <span class="em">in an officer's pocket.</span></div>
+        </div>
+      </div>
+
+      <!-- T3 amber scan-line -->
+      <div id="t3" class="clip trans" data-start="184.4" data-duration="0.9" data-track-index="9">
+        <div class="flash" id="t3flash"></div><div class="wipe" id="t3wipe"></div><div class="bar" id="t3bar"></div>
+      </div>
+
+      <!-- ============================================================
+           CHAPTER 4 — THE MOBILE APP (3:05–4:00)
+      ============================================================ -->
+
+      <!-- S14 [MEDIUM] 185–205 : SOS / dispatch -->
+      <div id="s14" class="clip scene dark" data-start="185" data-duration="20" data-track-index="2">
+        <div class="phone fade" id="s14phone"></div>
+        <div class="phone-side">
+          <div class="kicker fade" id="s14k">Panic / SOS → live dispatch</div>
+          <div class="headline fade" id="s14h">One tap. A station head sees it. Help is <span class="em">authorized in real time.</span></div>
+        </div>
+      </div>
+
+      <!-- S15 [MEDIUM] 205–220 : case / evidence in the field -->
+      <div id="s15" class="clip scene dark" data-start="205" data-duration="15" data-track-index="1">
+        <div class="phone fade" id="s15phone"></div>
+        <div class="phone-side">
+          <div class="kicker fade" id="s15k">Case files · evidence chain</div>
+          <div class="headline fade" id="s15h">Every case, every evidence chain — <span class="tl">tamper-proof</span>, in the field.</div>
+        </div>
+      </div>
+
+      <!-- S16 [FAST callback] 220–240 : callback montage -->
+      <div id="s16" class="clip scene" data-start="220" data-duration="20" data-track-index="2">
+        <div class="mtile" id="c1"><img src="assets/img/network-graph-force.png" /></div>
+        <div class="mtile" id="c2"><img src="assets/img/crime-trends.png" /></div>
+        <div class="mtile" id="c3"><img src="assets/img/governance-audit.png" /></div>
+        <div class="mtile" id="c4"><img src="assets/img/akka-fleet.png" /></div>
+        <div class="scrim"></div>
+        <div class="card" id="s16card" style="justify-content:flex-end; padding-bottom:120px;">
+          <div class="big fade" id="s16h" style="font-size:60px;">This isn't a mockup.</div>
+          <div class="small fade" id="s16s" style="font-size:36px; color:var(--ink); margin-top:14px;">
+            Everything you just saw is <span class="tl">real, running, connected.</span></div>
+        </div>
+      </div>
+
+      <!-- T4 amber scan-line -->
+      <div id="t4" class="clip trans" data-start="239.4" data-duration="0.9" data-track-index="8">
+        <div class="flash" id="t4flash"></div><div class="wipe" id="t4wipe"></div><div class="bar" id="t4bar"></div>
+      </div>
+
+      <!-- ============================================================
+           CHAPTER 5 — THE CLOSE (4:00–4:45)
+      ============================================================ -->
+
+      <!-- S17 [BREATHER] 240–266 : closing line, pins glowing calmly -->
+      <div id="s17" class="clip scene dark" data-start="240" data-duration="26" data-track-index="1">
+        <div class="mapwrap" style="opacity:.9;">
+          <svg class="mapsvg" id="s17map" viewBox="0 0 400 500">
+            <path class="kmap-fill" d="M150 20 L210 34 L246 74 L238 120 L272 150 L300 210 L288 262
+              L316 300 L300 350 L250 372 L236 430 L196 470 L150 452 L128 400 L92 372 L104 320
+              L74 288 L96 236 L70 196 L92 150 L82 104 L120 70 Z"/>
+            <path class="link" d="M112 150 L176 392"/>
+            <path class="link" d="M176 392 L266 330"/>
+            <path class="link" d="M266 330 L112 150"/>
+            <circle class="pin warm" id="s17p1" cx="112" cy="150" r="12"/>
+            <circle class="pin warm" id="s17p2" cx="176" cy="392" r="12"/>
+            <circle class="pin warm" id="s17p3" cx="266" cy="330" r="12"/>
+          </svg>
+        </div>
+        <div class="card" style="padding:0 260px;">
+          <div class="big fade" id="s17a" style="font-size:58px; line-height:1.24;">
+            A pattern caught <span class="tl">two days earlier.</span></div>
+          <div class="big fade" id="s17b" style="font-size:58px; line-height:1.24; margin-top:16px;">
+            An officer who <span class="tl">comes home safe.</span></div>
+          <div class="small fade" id="s17c" style="margin-top:34px; font-size:34px;">
+            That's what this is actually for.</div>
+        </div>
+      </div>
+
+      <!-- S18 [FAST] 266–285 : logo + name, then clean black -->
+      <div id="s18" class="clip scene dark" data-start="266" data-duration="19" data-track-index="2">
+        <div class="card">
+          <div class="logo">
+            <div class="shield fade" id="s18shield">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L20 5 V11 C20 16.5 16.5 20.5 12 22 C7.5 20.5 4 16.5 4 11 V5 Z"
+                fill="#0a0e1c" stroke="#0a0e1c"/><path d="M9 12 l2 2 l4 -5" stroke="#f0a63c" stroke-width="2"
+                fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="word fade" id="s18word">SAHASRA</div>
+            <div class="tag fade" id="s18tag">KSP Datathon 2026</div>
+          </div>
+        </div>
+        <div class="fade" id="s18black" style="position:absolute; inset:0; background:#05070f; opacity:0;"></div>
+      </div>
+
+      <!-- ====================== ROOT-LEVEL VIDEOS (must be direct children) ====================== -->
+      <video id="v-av1" src="assets/video/av1-login.mp4" class="app fade"
+        data-start="165" data-duration="20" data-track-index="3" muted playsinline></video>
+      <video id="v-av3" src="assets/video/av3-dispatch.mp4" class="app fade"
+        data-start="185" data-duration="20" data-track-index="4" muted playsinline></video>
+      <video id="v-av2" src="assets/video/av2-evidence.mp4" class="app fade"
+        data-start="205" data-duration="15" data-track-index="3" muted playsinline></video>
+
+      <!-- ============ AUDIO: per-chapter music beds ============ -->
+      <audio id="bed1" src="assets/audio/bed1-tension.wav"   data-start="0"   data-duration="37"  data-track-index="10" data-volume="0.32"></audio>
+      <audio id="bed2" src="assets/audio/bed2-confident.wav" data-start="34"  data-duration="33"  data-track-index="11" data-volume="0.32"></audio>
+      <audio id="bed3" src="assets/audio/bed3-tactile.wav"   data-start="64"  data-duration="124" data-track-index="12" data-volume="0.30"></audio>
+      <audio id="bed4" src="assets/audio/bed4-warm.wav"      data-start="183" data-duration="59"  data-track-index="13" data-volume="0.32"></audio>
+      <audio id="bed5" src="assets/audio/bed5-sincere.wav"   data-start="240" data-duration="34"  data-track-index="14" data-volume="0.32"></audio>
+
+      <!-- ============ AUDIO: designed SFX ============ -->
+      <audio id="sfx-subbass"  src="assets/audio/subbass-hit.wav"    data-start="2.1"   data-duration="2"   data-track-index="20" data-volume="0.9"></audio>
+      <audio id="sfx-riser"    src="assets/audio/tension-riser.wav"  data-start="8"     data-duration="10"  data-track-index="21" data-volume="0.4"></audio>
+      <audio id="sfx-warm"     src="assets/audio/warm-resolve.wav"   data-start="25.8"  data-duration="3.5" data-track-index="22" data-volume="0.7"></audio>
+      <audio id="sfx-scan1"    src="assets/audio/scan-whoosh.wav"    data-start="34.5"  data-duration="0.9" data-track-index="23" data-volume="0.55"></audio>
+      <audio id="sfx-scan2"    src="assets/audio/scan-whoosh.wav"    data-start="64.5"  data-duration="0.9" data-track-index="24" data-volume="0.55"></audio>
+      <audio id="sfx-scan3"    src="assets/audio/scan-whoosh.wav"    data-start="184.5" data-duration="0.9" data-track-index="25" data-volume="0.55"></audio>
+      <audio id="sfx-scan4"    src="assets/audio/scan-whoosh.wav"    data-start="239.5" data-duration="0.9" data-track-index="26" data-volume="0.55"></audio>
+      <audio id="sfx-c3a"      src="assets/audio/connect-chime.wav"  data-start="21.6"  data-duration="1.6" data-track-index="27" data-volume="0.45"></audio>
+      <audio id="sfx-c3b"      src="assets/audio/connect-chime.wav"  data-start="23.0"  data-duration="1.6" data-track-index="28" data-volume="0.45"></audio>
+      <audio id="sfx-c3c"      src="assets/audio/connect-chime.wav"  data-start="24.4"  data-duration="1.6" data-track-index="29" data-volume="0.5"></audio>
+      <audio id="sfx-c7a"      src="assets/audio/connect-chime.wav"  data-start="82.0"  data-duration="1.6" data-track-index="30" data-volume="0.42"></audio>
+      <audio id="sfx-c7b"      src="assets/audio/connect-chime.wav"  data-start="84.5"  data-duration="1.6" data-track-index="31" data-volume="0.42"></audio>
+      <audio id="sfx-c7c"      src="assets/audio/connect-chime.wav"  data-start="89.5"  data-duration="1.6" data-track-index="32" data-volume="0.42"></audio>
+      <audio id="sfx-s8whoosh" src="assets/audio/scan-whoosh.wav"    data-start="96.2"  data-duration="0.9" data-track-index="33" data-volume="0.35"></audio>
+      <audio id="sfx-verified" src="assets/audio/verified-chime.wav" data-start="141"   data-duration="1.4" data-track-index="34" data-volume="0.6"></audio>
+      <audio id="sfx-relay1"   src="assets/audio/connect-chime.wav"  data-start="150.6" data-duration="1.6" data-track-index="35" data-volume="0.4"></audio>
+      <audio id="sfx-relay2"   src="assets/audio/connect-chime.wav"  data-start="152.0" data-duration="1.6" data-track-index="36" data-volume="0.4"></audio>
+      <audio id="sfx-relay3"   src="assets/audio/connect-chime.wav"  data-start="153.4" data-duration="1.6" data-track-index="37" data-volume="0.4"></audio>
+      <audio id="sfx-relay4"   src="assets/audio/connect-chime.wav"  data-start="154.8" data-duration="1.6" data-track-index="38" data-volume="0.45"></audio>
+      <audio id="sfx-buzz"     src="assets/audio/device-buzz.wav"    data-start="190"   data-duration="1.1" data-track-index="39" data-volume="0.6"></audio>
+      <audio id="sfx-final"    src="assets/audio/final-chord.wav"    data-start="266.4" data-duration="4"   data-track-index="40" data-volume="0.78"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const E_IN = "power3.out", E_OUT = "power3.in", E_CAM = "none";
+
+      /* ---------- CHAPTER 1 ---------- */
+      // S1 cold open
+      tl.set(["#s1a", "#s1b"], { autoAlpha: 0, y: 26 }, 0);
+      tl.to("#s1a", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 0.6);
+      tl.to("#s1b", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 2.1);
+      tl.fromTo("#s1grp", { scale: 1 }, { scale: 1.035, duration: 5, ease: E_CAM }, 2.8);
+      tl.to("#s1grp", { autoAlpha: 0, duration: .4, ease: E_OUT }, 7.6);
+      tl.set("#s1grp", { autoAlpha: 0 }, 8);
+
+      // S2 map + pins
+      tl.set(["#s2k", "#s2h"], { autoAlpha: 0, y: 24 }, 8);
+      tl.fromTo("#s2map", { scale: .92, transformOrigin: "50% 50%" }, { scale: 1, duration: 12, ease: E_CAM }, 8);
+      tl.fromTo(["#s2p1","#s2p2","#s2p3"], { scale: 0, transformOrigin: "center" },
+        { scale: 1, duration: .5, ease: "back.out(1.6)", stagger: .18 }, 8.4);
+      // pulsing red glow (finite yoyo)
+      ["#s2g1","#s2g2","#s2g3"].forEach((g, i) => {
+        tl.fromTo(g, { scale: .5, autoAlpha: .0, transformOrigin: "center" },
+          { scale: 1.5, autoAlpha: .5, duration: .9, ease: "sine.out", yoyo: true, repeat: 5 }, 9 + i * .15);
+      });
+      tl.to("#s2k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 9.6);
+      tl.to("#s2h", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 10.1);
+      tl.to(["#s2k","#s2h"], { autoAlpha: 0, duration: .4 }, 19.5);
+
+      // S3 connect
+      ["#s3l1","#s3l2","#s3l3"].forEach((l, i) => {
+        const len = 520;
+        tl.set(l, { strokeDasharray: len, strokeDashoffset: len }, 20);
+        tl.to(l, { strokeDashoffset: 0, duration: 1.6, ease: "power2.inOut" }, 21 + i * 1.4);
+      });
+      tl.set("#s3h", { autoAlpha: 0, y: 26 }, 20);
+      tl.to("#s3h", { autoAlpha: 1, y: 0, duration: .9, ease: E_IN }, 26.2);
+      tl.fromTo("#s3map", { scale: .98 }, { scale: 1.03, duration: 15, ease: E_CAM }, 20);
+      tl.to("#s3h", { autoAlpha: 0, duration: .4 }, 34.3);
+
+      /* ---------- helper: amber scan-line ---------- */
+      function scanline(t0, prefix) {
+        tl.fromTo(`#${prefix}bar`, { y: -8, autoAlpha: 1 }, { y: 1088, duration: .6, ease: "power2.in" }, t0);
+        tl.fromTo(`#${prefix}wipe`, { scaleY: 0, autoAlpha: 1 }, { scaleY: 1, duration: .55, ease: "power2.in" }, t0 + .05);
+        tl.to(`#${prefix}wipe`, { autoAlpha: 0, duration: .25 }, t0 + .6);
+        tl.fromTo(`#${prefix}flash`, { backgroundColor: "rgba(240,166,60,0)" },
+          { backgroundColor: "rgba(240,166,60,0.10)", duration: .18, yoyo: true, repeat: 1 }, t0 + .18);
+      }
+      scanline(34.5, "t1");
+
+      /* ---------- CHAPTER 2 ---------- */
+      // S4 chatbot card + case-explorer glimpse
+      tl.set(["#s4a","#s4b"], { autoAlpha: 0, y: 24 }, 35);
+      tl.to("#s4a", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 35.5);
+      tl.to("#s4b", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 36.6);
+      // glimpse: bring image in fast at 44, out fast at 47.5 (don't dwell)
+      tl.to("#s4card", { autoAlpha: 0, duration: .35 }, 43.4);
+      tl.fromTo("#s4img", { autoAlpha: 0, scale: 1.08 }, { autoAlpha: 1, scale: 1.02, duration: .5, ease: E_IN }, 43.6);
+      tl.to("#s4lab", { autoAlpha: 1, duration: .4 }, 44.2);
+      tl.fromTo("#s4kb", { x: 0 }, { x: -40, duration: 3.4, ease: E_CAM }, 43.6);
+      tl.to(["#s4img","#s4lab"], { autoAlpha: 0, duration: .4, ease: E_OUT }, 47.3);
+
+      // S5 breather map hold
+      tl.set("#s5h", { autoAlpha: 0, y: 24 }, 50);
+      tl.fromTo("#s5kb", { scale: 1.0, x: 0 }, { scale: 1.08, x: -30, duration: 15, ease: E_CAM }, 50);
+      tl.to("#s5h", { autoAlpha: 1, y: 0, duration: 1.0, ease: E_IN }, 51.4);
+      tl.to("#s5h", { autoAlpha: 0, duration: .4 }, 64.3);
+      scanline(64.5, "t2");
+
+      /* ---------- CHAPTER 3 ---------- */
+      // S6 montage — 6 tiles, ~2.5s each
+      const mtiles = ["#m1","#m2","#m3","#m4","#m5","#m6"];
+      const mlabels = ["COMMAND CENTER","CASE EXPLORER","CRIME TRENDS","PATROL PLANNER","MO PROFILER","GOVERNANCE"];
+      tl.set(mtiles, { autoAlpha: 0 }, 65);
+      mtiles.forEach((m, i) => {
+        const t0 = 65 + i * 2.5;
+        tl.fromTo(m, { autoAlpha: 0, scale: 1.06 }, { autoAlpha: 1, scale: 1.0, duration: .35, ease: E_IN }, t0);
+        tl.fromTo(m + " img", { x: 0 }, { x: -30, duration: 2.5, ease: E_CAM }, t0);
+        if (i < 5) tl.to(m, { autoAlpha: 0, duration: .25 }, t0 + 2.4);
+        tl.call(setLabel, [i], t0 + .02);
+      });
+      function setLabel(i) { var el = document.getElementById("m-label"); if (el) el.textContent = mlabels[i]; }
+      tl.to("#s6", {}, 79.9);
+
+      // S7 hero — force -> starburst
+      tl.set(["#s7k","#s7h1","#s7h2"], { autoAlpha: 0, y: 24 }, 80);
+      tl.fromTo("#s7a", { scale: 1.0, x: 0, y: 0 }, { scale: 1.14, x: -40, y: -20, duration: 8.4, ease: E_CAM }, 80);
+      tl.to("#s7k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 80.6);
+      tl.to("#s7h1", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 81.2);
+      tl.to("#s7h2", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 82.0);
+      // cut to starburst state at ~88
+      tl.to("#s7bwrap", { autoAlpha: 1, duration: .5, ease: E_IN }, 88.2);
+      tl.fromTo("#s7b", { scale: 1.12, x: 30 }, { scale: 1.0, x: -10, duration: 6.8, ease: E_CAM }, 88.2);
+      tl.to(["#s7k","#s7h1","#s7h2"], { autoAlpha: 0, duration: .4 }, 94.3);
+
+      // S8 forecast
+      tl.set(["#s8k","#s8h"], { autoAlpha: 0, y: 24 }, 95);
+      tl.fromTo("#s8kb", { scale: 1.02, x: 30 }, { scale: 1.12, x: -50, duration: 15, ease: E_CAM }, 95);
+      tl.to("#s8k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 95.6);
+      tl.to("#s8h", { autoAlpha: 1, y: 0, duration: .8, ease: E_IN }, 96.2);
+      tl.to(["#s8k","#s8h"], { autoAlpha: 0, duration: .4 }, 109.3);
+
+      // S9 camera intelligence
+      tl.set(["#s9k","#s9h"], { autoAlpha: 0, y: 22 }, 110);
+      tl.fromTo("#s9kb", { scale: 1.15, x: 20 }, { scale: 1.24, x: -20, duration: 10, ease: E_CAM }, 110);
+      tl.to("#s9k", { autoAlpha: 1, y: 0, duration: .5, ease: E_IN }, 110.4);
+      tl.to("#s9h", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 110.9);
+      tl.to(["#s9k","#s9h"], { autoAlpha: 0, duration: .35 }, 119.4);
+
+      // S10 explainability breather
+      tl.set(["#s10a","#s10b"], { autoAlpha: 0, y: 22 }, 120);
+      tl.fromTo("#s10d", { autoAlpha: 0, x: 30 }, { autoAlpha: 1, x: 0, duration: .8, ease: E_IN }, 120.2);
+      tl.to("#s10a", { autoAlpha: 1, y: 0, duration: .8, ease: E_IN }, 120.8);
+      tl.to("#s10b", { autoAlpha: 1, y: 0, duration: .9, ease: E_IN }, 122.0);
+      tl.to(["#s10a","#s10b","#s10d"], { autoAlpha: 0, duration: .4 }, 131.3);
+
+      // S11 governance verified
+      tl.set(["#s11k","#s11h"], { autoAlpha: 0, y: 22 }, 132);
+      tl.fromTo("#s11kb", { scale: 1.0, y: -30 }, { scale: 1.1, y: 20, duration: 18, ease: E_CAM }, 132);
+      tl.to("#s11k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 132.6);
+      tl.to("#s11h", { autoAlpha: 1, y: 0, duration: .8, ease: E_IN }, 133.2);
+      tl.fromTo("#s11ring", { autoAlpha: 0, scale: 1.04, transformOrigin: "center" },
+        { autoAlpha: 1, scale: 1, duration: .6, ease: "back.out(1.4)" }, 141.0);
+      tl.to("#s11ring", { autoAlpha: 0, duration: .8 }, 147.5);
+      tl.to(["#s11k","#s11h"], { autoAlpha: 0, duration: .4 }, 149.3);
+
+      // S12 relay
+      tl.set(["#r1","#r2","#r3","#r4"], { autoAlpha: 0, y: 30 }, 150);
+      tl.set("#s12h", { autoAlpha: 0, y: 22 }, 150);
+      const rcols = ["#r1","#r2","#r3","#r4"], arrows = ["#ar1","#ar2","#ar3"];
+      rcols.forEach((c, i) => tl.to(c, { autoAlpha: 1, y: 0, duration: .45, ease: "back.out(1.3)" }, 150.4 + i * 1.4));
+      arrows.forEach((a, i) => tl.fromTo(a, { autoAlpha: 0, scaleX: 0, transformOrigin: "left center" },
+        { autoAlpha: 1, scaleX: 1, duration: .35, ease: E_IN }, 151.4 + i * 1.4));
+      tl.to("#s12h", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 156.4);
+      tl.to(["#r1","#r2","#r3","#r4","#ar1","#ar2","#ar3","#s12h"], { autoAlpha: 0, duration: .4 }, 164.3);
+
+      // S13 into mobile app (login) — v-av1
+      tl.set(["#s13k","#s13h"], { autoAlpha: 0, y: 24 }, 165);
+      tl.fromTo("#s13phone", { autoAlpha: 0, scale: .92, y: 30 }, { autoAlpha: 1, scale: 1, y: 0, duration: .7, ease: "back.out(1.2)" }, 165.4);
+      tl.fromTo("#v-av1", { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .7, ease: "back.out(1.2)" }, 165.5);
+      tl.to("#s13k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 166.2);
+      tl.to("#s13h", { autoAlpha: 1, y: 0, duration: .8, ease: E_IN }, 166.9);
+      tl.to(["#s13k","#s13h","#s13phone","#v-av1"], { autoAlpha: 0, duration: .4 }, 184.3);
+      scanline(184.5, "t3");
+
+      /* ---------- CHAPTER 4 ---------- */
+      // S14 SOS/dispatch — v-av3
+      tl.set(["#s14k","#s14h"], { autoAlpha: 0, y: 24 }, 185);
+      tl.fromTo("#s14phone", { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .6, ease: "back.out(1.2)" }, 185.4);
+      tl.fromTo("#v-av3", { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .6, ease: "back.out(1.2)" }, 185.5);
+      tl.to("#s14k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 186.1);
+      tl.to("#s14h", { autoAlpha: 1, y: 0, duration: .8, ease: E_IN }, 186.8);
+      // buzz nudge on the phone as the alert lands
+      tl.to("#s14phone", { x: "+=6", duration: .06, yoyo: true, repeat: 5 }, 190.0);
+      tl.to(["#s14k","#s14h","#s14phone","#v-av3"], { autoAlpha: 0, duration: .4 }, 204.3);
+
+      // S15 case/evidence — v-av2
+      tl.set(["#s15k","#s15h"], { autoAlpha: 0, y: 24 }, 205);
+      tl.fromTo("#s15phone", { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .6, ease: "back.out(1.2)" }, 205.4);
+      tl.fromTo("#v-av2", { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .6, ease: "back.out(1.2)" }, 205.5);
+      tl.to("#s15k", { autoAlpha: 1, y: 0, duration: .6, ease: E_IN }, 206.1);
+      tl.to("#s15h", { autoAlpha: 1, y: 0, duration: .8, ease: E_IN }, 206.8);
+      tl.to(["#s15k","#s15h","#s15phone","#v-av2"], { autoAlpha: 0, duration: .4 }, 219.3);
+
+      // S16 callback montage
+      const ctiles = ["#c1","#c2","#c3","#c4"];
+      tl.set(ctiles, { autoAlpha: 0 }, 220);
+      tl.set(["#s16h","#s16s"], { autoAlpha: 0, y: 24 }, 220);
+      ctiles.forEach((c, i) => {
+        const t0 = 220 + i * 3.2;
+        tl.fromTo(c, { autoAlpha: 0, scale: 1.06 }, { autoAlpha: 1, scale: 1, duration: .4, ease: E_IN }, t0);
+        tl.fromTo(c + " img", { x: 0 }, { x: -26, duration: 3.4, ease: E_CAM }, t0);
+        if (i < 3) tl.to(c, { autoAlpha: 0, duration: .3 }, t0 + 3.0);
+      });
+      tl.to("#s16h", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 233.0);
+      tl.to("#s16s", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 233.8);
+      tl.to(["#s16h","#s16s","#c4"], { autoAlpha: 0, duration: .4 }, 239.3);
+      scanline(239.5, "t4");
+
+      /* ---------- CHAPTER 5 ---------- */
+      // S17 closing breather
+      tl.set(["#s17a","#s17b","#s17c"], { autoAlpha: 0, y: 24 }, 240);
+      tl.set(["#s17p1","#s17p2","#s17p3"], { transformOrigin: "center" }, 240);
+      tl.fromTo("#s17map", { scale: 1.0, autoAlpha: .0 }, { scale: 1.04, autoAlpha: .35, duration: 26, ease: E_CAM }, 240);
+      // calm breathing glow on pins (gentle, part of the "settled" close — finite)
+      ["#s17p1","#s17p2","#s17p3"].forEach((p, i) =>
+        tl.fromTo(p, { scale: 1 }, { scale: 1.25, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: 3 }, 241 + i * .3));
+      tl.to("#s17a", { autoAlpha: 1, y: 0, duration: 1.0, ease: E_IN }, 242.0);
+      tl.to("#s17b", { autoAlpha: 1, y: 0, duration: 1.0, ease: E_IN }, 244.4);
+      tl.to("#s17c", { autoAlpha: 1, y: 0, duration: 1.1, ease: E_IN }, 247.2);
+      tl.to(["#s17a","#s17b","#s17c"], { autoAlpha: 0, duration: .6 }, 264.8);
+
+      // S18 logo
+      tl.set(["#s18word","#s18tag"], { autoAlpha: 0, y: 26 }, 266);
+      tl.fromTo("#s18shield", { autoAlpha: 0, scale: .6, rotation: -8 },
+        { autoAlpha: 1, scale: 1, rotation: 0, duration: .7, ease: "back.out(1.5)" }, 266.4);
+      tl.to("#s18word", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 267.0);
+      tl.to("#s18tag", { autoAlpha: 1, y: 0, duration: .7, ease: E_IN }, 267.8);
+      // hold, then fade to clean black silence
+      tl.to("#s18black", { autoAlpha: 1, duration: 1.6, ease: "power2.inOut" }, 277.5);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
